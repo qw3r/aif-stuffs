@@ -11,10 +11,10 @@ RUNTIME_REPOSITORIES=
 RUNTIME_PACKAGES=
 
 TARGET_REPOSITORIES=(
- core "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/core/os/i686"
- extra "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/extra/os/i686"
- community "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/community/os/i686"
- archlinuxfr "http://repo.archlinux.fr/i686"
+	core "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/core/os/i686"
+	extra "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/extra/os/i686"
+	community "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/community/os/i686"
+	archlinuxfr "http://repo.archlinux.fr/i686"
 )
 
 
@@ -44,6 +44,9 @@ worker_configure_system () {
 	sed -i 's/^#\(Server = ftp:\/\/ftp\.mfa\.kfki\.hu\/.*\)$/\1/' $var_TARGET_DIR/etc/pacman.d/mirrorlist
 	echo -e "\n[archlinuxfr]\nServer = http://repo.archlinux.fr/\$arch\n" >> $var_TARGET_DIR/etc/pacman.conf
 	postconfigure_target
+	
+	inform "Set root password to 'moo'"
+	echo root:moo | chroot $var_TARGET_DIR chpasswd
 }
 
 GRUB_DEVICE=/dev/vda
