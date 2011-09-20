@@ -1,3 +1,19 @@
-AIF procedure + config for automated ArchLinux installation on virtio using grub2
+#### AIF procedure + config for automated ArchLinux installation on virtio using grub2
 
-aif -p automatic-grub2 -c arch-on-virtio
+I use this 'procedure' and 'config' for installing ArchLinux in KVM based virtual machines.
+The installation will use grub2 as bootloader. 
+
+I think there are much more simple/clever/clear methods doing this... i hadn't got the time to find them.
+
+Steps:
+ 1. boot into arch installer
+ 2. set up network
+  optional steps
+    a. change root password
+    b. start sshd
+    c. log into machine, continue with step 3
+ 3. wget https://raw.github.com/qw3r/aif-stuffs/master/procedures/automatic-grub2 && cp automatic-grub2 /usr/lib/aif/core/procedures
+ 4. wget https://raw.github.com/qw3r/aif-stuffs/master/configs/arch-on-virtio
+ 5. aif -p automatic-grub2 -c arch-on-virtio
+ 6. lean back (or do some real work)
+
