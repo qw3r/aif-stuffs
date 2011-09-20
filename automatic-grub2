@@ -1,0 +1,105 @@
+#!/bin/bash
+depend_procedure core base # important, don't be confused when worker/variable definitions seem to be missing here.
+
+var_OPTS_STRING="c:"
+var_ARGS_USAGE="-c <config>: Specify a configfile (profile) to be used"
+var_AUTOMATIC_PROFILE=""
+
+# TODO: if the user does aif -p automatic -c, then $1 is ":-" ??? if you do -c <something> then it's ok.
+process_args ()
+{
+	if [ "$1" = '-c' ]
+	then
+		[ -z "$2" ] && die_error "You must specify a config"
+		var_AUTOMATIC_PROFILE=$2
+	else
+		usage
+		exit 5
+	fi
+}
+
+worker_intro ()
+{
+	notify "Automatic procedure running profile $var_AUTOMATIC_PROFILE ...\n$DISCLAIMER"
+}
+
+
+worker_configure ()
+{
+	var_UI_TYPE=${arg_ui_type:-cli}
+	ui_init
+	[ -z "$var_AUTOMATIC_PROFILE" ] && die_error "You must specify a config file to use this procedure"
+	source $var_AUTOMATIC_PROFILE   || die_error "Could not source config $var_AUTOMATIC_PROFILE"
+	# Check mandatory options
+	[ -z "$PARTITIONS" ] && die_error "You did not specify a partition scheme"
+	[ -z "$BLOCKDATA"  ] && die_error "You did not specify a partition scheme"
+	[ -z "$GRUB_DEVICE" ] && die_error "You did not specify a grub device"
+	[ -z "$TARGET_REPOSITORIES" ] && die_error "You did not specify \$TARGET_REPOSITORIES"
+	# initialize internal variables based on variables set by the user (some of the vars are handled in other workers):
+	var_RUNTIME_REPOSITORIES=$RUNTIME_REPOSITORIES
+	var_RUNTIME_PACKAGES=$RUNTIME_PACKAGES
+	var_GRUB_DEVICE=$GRUB_DEVICE
+	var_PARTITIONS=$PARTITIONS
+	var_BLOCKDATA=$BLOCKDATA
+	HARDWARECLOCK=${HARDWARECLOCK:-localtime}
+	TIMEZONE=${TIMEZONE:-Canada/Pacific}
+}
+
+worker_select_source ()
+{
+	true # TARGET_REPOSITORIES, MIRROR is already sourced from config
+}
+
+worker_prepare_disks ()
+{
+	get_possible_fs
+	echo "$var_PARTITIONS" > $TMP_PARTITIONS
+	echo "$var_BLOCKDATA" > $TMP_BLOCKDEVICES
+	process_disks       || die_error "Could not process_disks"
+	if ! process_filesystems
+	then
+		show_warning 'Disk processing' "Could not process_filesystems"
+		txt='also failed to execute properly'
+		rollback_filesystems && txt='ended successfully'
+		die_error "Something failed while processing the filesystem.  A rollback was executed, which $txt"
+	fi
+	inform "Partitions and filesystems made successfully"
+
+	# TODO: fstab? auto-add to fstab with libs? auto mkdir's on target_dir?
+}
+
+worker_package_list ()
+{
+	var_TARGET_PACKAGES=$TARGET_PACKAGES
+	var_TARGET_GROUPS=$TARGET_GROUPS
+	var_TARGET_PACKAGES_EXCLUDE=$TARGET_PACKAGES_EXCLUDE
+	[ -z "$var_TARGET_PACKAGES" -a -z "$var_TARGET_GROUPS" ] && var_TARGET_GROUPS=base
+	true
+}
+
+
+worker_install_packages ()
+{
+	target_prepare_pacman && installpkg
+}
+
+
+worker_set_clock ()
+{
+	# uses $TIMEZONE, clock itself remains untouched.
+	copy_timezone_file
+}
+
+
+worker_install_bootloader ()
+{
+	#get_grub_map || return 1
+	inform "Installing bootloader: GRUB2"
+	mount -o bind /dev $var_TARGET_DIR/dev
+	chroot $var_TARGET_DIR grub_bios-install --recheck $var_GRUB_DEVICE --modules=ext2
+	chroot $var_TARGET_DIR grub-install $var_GRUB_DEVICE 2>&1 > /dev/null
+	
+	inform "Create initial grub config"
+	chroot $var_TARGET_DIR grub-mkconfig -o /boot/grub/grub.cfg
+	umount $var_TARGET_DIR/dev
+}

@@ -1,0 +1,3 @@
+AIF procedure + config for automated ArchLinux installation on virtio using grub2
+
+aif -p automatic-grub2 -c arch-on-virtio
