@@ -3,7 +3,7 @@
 # definitions), unless otherwise specified.
 
 SOURCE=net
-SYNC_URL=ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/$repo/os/x86_64
+SYNC_URL='ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/$repo/os/$arch'
 HARDWARECLOCK=UTC
 TIMEZONE=Europe/Budapest
 
@@ -11,10 +11,10 @@ RUNTIME_REPOSITORIES=
 RUNTIME_PACKAGES=
 
 TARGET_REPOSITORIES=(
-	core "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/core/os/x86_64"
-	extra "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/extra/os/x86_64"
-	multilib "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/extra/os/x86_64"
-	community "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/community/os/x86_64"
+	core $SYNC_URL
+	extra $SYNC_URL
+	multilib $SYNC_URL
+	community $SYNC_URL
 	archlinuxfr "http://repo.archlinux.fr/x86_64"
 )
 
