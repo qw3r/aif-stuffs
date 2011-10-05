@@ -41,7 +41,7 @@ worker_configure_system () {
 	sed -i 's/^MODULES=""/MODULES="virtio virtio_blk virtio_ring virtio_net virtio_pci"/' $var_TARGET_DIR/etc/mkinitcpio.conf
 	sed -i 's/^HOOKS="base udev autodetect pata scsi sata filesystems usbinput"/HOOKS="base udev autodetect filesystems"/' $var_TARGET_DIR/etc/mkinitcpio.conf
 	sed -i 's/^#COMPRESSION="xz"/COMPRESSION="xz"/' $var_TARGET_DIR/etc/mkinitcpio.conf
-	sed -i 's/^#\(Server = ftp:\/\/ftp\.mfa\.kfki\.hu\/.*\)$/\1/' $var_TARGET_DIR/etc/pacman.d/mirrorlist
+	sed -i 's/^#\(.*ftp\.mfa\.kfki\.hu\/.*\)$/\1/' $var_TARGET_DIR/etc/pacman.d/mirrorlist
 	echo -e "\n[archlinuxfr]\nServer = http://repo.archlinux.fr/\$arch\n" >> $var_TARGET_DIR/etc/pacman.conf
 	postconfigure_target
 	
