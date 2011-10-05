@@ -1,0 +1,65 @@
+# this config explains the (all) available options.
+# the variables are optional and we define their defaults here (so you could omit the
+# definitions), unless otherwise specified.
+
+SOURCE=net
+SYNC_URL=ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/$repo/os/x86_64
+HARDWARECLOCK=UTC
+TIMEZONE=Europe/Budapest
+
+RUNTIME_REPOSITORIES=
+RUNTIME_PACKAGES=
+
+TARGET_REPOSITORIES=(
+	core "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/core/os/x86_64"
+	extra "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/extra/os/x86_64"
+	multilib "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/extra/os/x86_64"
+	community "ftp://ftp.mfa.kfki.hu/pub/mirrors/ftp.archlinux.org/community/os/x86_64"
+	archlinuxfr "http://repo.archlinux.fr/x86_64"
+)
+
+
+# packages to install
+TARGET_GROUPS='base'
+TARGET_PACKAGES_EXCLUDE='reiserfsprogs xfsprogs ppp grub'
+TARGET_PACKAGES='openssh e2fsprogs sudo vim grub2 yaourt mc cpufrequtils xorg-server xorg-xinit gdm gnome ttf-dejavu'
+
+# you can optionally also override some functions...
+worker_intro () {
+	inform "Let's do it! You have 10 seconds to stop it. All data on /dev/sda will be lost!"
+	sleep 10
+	
+	for i in `mount | awk '/\/mnt/{print$3}' | tac`; do
+		umount $i 2>&1 >/dev/null
+	done
+}
+
+worker_configure_system () {
+	preconfigure_target
+	sed -i 's/^HOSTNAME="myhost"/HOSTNAME="gnome3"/' $var_TARGET_DIR/etc/rc.conf
+	sed -i 's/^\(DAEMONS=(hwclock syslog-ng network netfs crond\))/\1 sshd dbus)/' $var_TARGET_DIR/etc/rc.conf
+	sed -i 's/^MODULES=()/MODULES=(acpi-cpufreq)/' $var_TARGET_DIR/etc/rc.conf
+	sed -i 's/^interface=/interface=eth0/' $var_TARGET_DIR/etc/rc.conf
+	#sed -i 's/^MODULES=""/MODULES="virtio virtio_blk virtio_ring virtio_net virtio_pci"/' $var_TARGET_DIR/etc/mkinitcpio.conf
+	sed -i 's/^HOOKS="base udev autodetect pata scsi sata filesystems usbinput"/HOOKS="base udev autodetect scsi sata lvm2 filesystems usbinput"/' $var_TARGET_DIR/etc/mkinitcpio.conf
+	sed -i 's/^#COMPRESSION="xz"/COMPRESSION="xz"/' $var_TARGET_DIR/etc/mkinitcpio.conf
+	sed -i 's/^#\(.*ftp\.mfa\.kfki\.hu\/.*\)$/\1/' $var_TARGET_DIR/etc/pacman.d/mirrorlist
+	echo -e "\n[archlinuxfr]\nServer = http://repo.archlinux.fr/\$arch\n" >> $var_TARGET_DIR/etc/pacman.conf
+	postconfigure_target
+	
+	inform "Set root password to 'moo'"
+	echo root:moo | chroot $var_TARGET_DIR chpasswd
+}
+
+GRUB_DEVICE=/dev/sda
+PARTITIONS='/dev/sda 512:ext4:+ *:ext4'
+BLOCKDATA='/dev/sda1 raw no_label ext4;yes;/boot;target;no_opts;no_label;no_params
+/dev/sda2 raw no_label lvm-pv;yes;no_mountpoint;target;no_opts;no_label;no_params
+/dev/mapper/sda2+ lvm-pv no_label lvm-vg;yes;no_mountpoint;target;no_opts;vg0;/dev/mapper/sda2
+/dev/mapper/vg0 lvm-vg vg0 lvm-lv;yes;no_mountpoint;target;no_opts;swap;2G|lvm-lv;yes;no_mountpoint;target;no_opts;root;20G|lvm-lv;yes;no_mountpoint;target;no_opts;home;150G|lvm-lv;yes;no_mountpoint;target;no_opts;var;20G|lvm-lv;yes;no_mountpoint;target;no_opts;tmp;20G
+/dev/mapper/vg0-swap lvm-lv no_label swap;yes;no_mountpoint;target;no_opts;swap;no_params
+/dev/mapper/vg0-root lvm-lv no_label ext4;yes;/;target;no_opts;root;no_params
+/dev/mapper/vg0-var lvm-lv no_label ext4;yes;/var;target;no_opts;var;no_params
+/dev/mapper/vg0-tmp lvm-lv no_label ext4;yes;/tmp;target;no_opts;tmp;no_params
+/dev/mapper/vg0-home lvm-lv no_label ext4;yes;/home;target;no_opts;home;no_params'
+
